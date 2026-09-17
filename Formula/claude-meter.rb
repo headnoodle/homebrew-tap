@@ -3,8 +3,8 @@ class ClaudeMeter < Formula
 
   desc "macOS menu bar tool that tracks Claude Code API spend in real time"
   homepage "https://github.com/headnoodle/claude-meter"
-  url "https://github.com/headnoodle/claude-meter/archive/refs/tags/v0.4.4.tar.gz"
-  sha256 "f07b71dcdc860ca38f2a85e192092183974cd9400dc7448664d7f860f1a0ecab"
+  url "https://github.com/headnoodle/claude-meter/archive/refs/tags/v0.4.5.tar.gz"
+  sha256 "c9801a91eaf543af4cc2d13c8244f9ba4b37659cfa9843f46f43affcea1b6998"
   license "MIT"
 
   depends_on :macos
@@ -38,15 +38,40 @@ class ClaudeMeter < Formula
   end
 
   def post_install
-    # Restart the service if the user has it configured (plist exists).
-    # brew upgrade stops the service before post_install runs, so we can't
-    # rely on launchctl list — check for the plist file instead.
     plist_path = File.expand_path("~/Library/LaunchAgents/homebrew.mxcl.claude-meter.plist")
-    return unless File.exist?(plist_path)
+    target     = "gui/#{Process.uid}"
 
-    target = "gui/#{Process.uid}"
-    # Silently remove any stale entry, then start fresh with the new binary.
+    # brew upgrade stops the service and removes the plist before post_install
+    # runs, so we can't rely on plist existence alone. Fall back to the log file,
+    # which is only created when the user runs `brew services start`.
+    return unless File.exist?(plist_path) || (var/"log/claude-meter.log").exist?
+
+    # Recreate the plist if brew removed it when stopping the service.
+    unless File.exist?(plist_path)
+      File.write(plist_path, <<~XML)
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>Label</key>
+          <string>homebrew.mxcl.claude-meter</string>
+          <key>ProgramArguments</key>
+          <array>
+            <string>#{opt_bin}/claude-meter</string>
+          </array>
+          <key>KeepAlive</key>
+          <true/>
+          <key>StandardOutPath</key>
+          <string>#{var}/log/claude-meter.log</string>
+          <key>StandardErrorPath</key>
+          <string>#{var}/log/claude-meter.log</string>
+        </dict>
+        </plist>
+      XML
+    end
+
     system "/bin/launchctl", "bootout", target, plist_path, out: File::NULL, err: File::NULL
+    sleep 1
     system "/bin/launchctl", "bootstrap", target, plist_path
   rescue StandardError
     nil

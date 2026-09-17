@@ -3,8 +3,8 @@ class ClaudeMeter < Formula
 
   desc "macOS menu bar tool that tracks Claude Code API spend in real time"
   homepage "https://github.com/headnoodle/claude-meter"
-  url "https://github.com/headnoodle/claude-meter/archive/refs/tags/v0.4.5.tar.gz"
-  sha256 "c9801a91eaf543af4cc2d13c8244f9ba4b37659cfa9843f46f43affcea1b6998"
+  url "https://github.com/headnoodle/claude-meter/archive/refs/tags/v0.4.6.tar.gz"
+  sha256 "32ab950eade17069d1f1ca498344471e9e76043b0c0179373d40b3a22e3bea1a"
   license "MIT"
 
   depends_on :macos
